@@ -1,16 +1,28 @@
 import sqlite3 as lite
 import threading
 import uuid
+import os
 
+
+class csvfile(object):
+    def __init__(self, path, todb):
+        self.path = path
+        self.todb = todb
+
+    def __repr__(self):
+        return "" % (self.path, self.todb)
+
+def by_key(csvfile):
+    return csvfile.todb
 
 def selectfromdb(sql,namedb,fromdb, todb, event_for_wait, event_for_set):
-    event_for_wait.wait()
-    event_for_wait.clear()
+    #event_for_wait.wait()
+    #event_for_wait.clear()
     con = lite.connect(namedb)
     cur = con.cursor()
     cur.execute(sql+" limit "+str(fromdb)+","+str(todb))
     uid = str(uuid.uuid4())
-    tempfile = open('/tmp/tempcsv' + uid, 'w')
+    tempfile = open('/tmp/tempcsv-'+str(todb)+"-" + uid, 'w')
     s = ''
     i = 0
     for col in cur.description:
@@ -31,16 +43,16 @@ def selectfromdb(sql,namedb,fromdb, todb, event_for_wait, event_for_set):
             i = i + 1
         tempfile.write(s + '\n')
     tempfile.close()
-    con.commit()
-    event_for_set.set()
+    #con.commit()
+    #event_for_set.set()
 
 if __name__ == '__main__':
     namedb = "/home/rootkit/forarduino.db"
     sqlfile = "/home/rootkit/script"
     f= open(sqlfile,'r')
     sql = f.read()
-    con = lite.connect(namedb)
-    cur = con.cursor()
+    #con = lite.connect(namedb)
+    #cur = con.cursor()
     listthread = []
     eold = threading.Event()
     firste = eold
@@ -55,4 +67,24 @@ if __name__ == '__main__':
 
     for thread in listthread:
         thread.start()
-    firste.set()
+    #firste.set()
+    exit = False
+    while exit==False:
+        exit = True
+        for th in listthread:
+            if(th.isAlive()):
+                exit = False
+    listfiles=[]
+    for files in os.walk("/tmp/"):
+        for file in files:
+            if ((file.find("tempcsv-")!=-1)):
+                todb = file.split('-')
+                listfiles.append(csvfile(file,int(todb[1])))
+    reslistfiles = sorted(listfiles,key = by_key)
+    fres = open("outthread.csv","w")
+    for resfile in reslistfiles:
+        f = open("/tmp"+resfile,'r')
+        fres.write(f.read())
+        f.close()
+        os.system("rm /tmp/"+resfile)
+    fres.close()

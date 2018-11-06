@@ -1,31 +1,10 @@
-import sqlite3 as lite
-import threading
-import uuid
-
-namedb = "/home/rootkit/forarduino.db"
-con = lite.connect(namedb)
-cur = con.cursor()
-cur.execute("select * from mytemp"+" limit "+str(0)+","+str(100))
-uid = str(uuid.uuid4())
-tempfile = open('/tmp/tempcsv'+uid,'w')
-s=''
-i=0
-for col in cur.description:
-    if(i>2):
-        s=s+','+col[0]
-    else:
-        s=col[0]
-    i=i+1
-tempfile.write(s+'\n')
-for row in cur.fetchall():
-    s= ''
-    i=0
-    for col in row:
-        if(i>2):
-            s= s+','+str(col)
-        else:
-            s = str(col)
-        i=i+1
-    tempfile.write(s+'\n')
-tempfile.close()
-con.commit()
+import requests
+import json
+chat_id = 327717695
+tokenTelegram = "491859422:AAF2jRsyvyjk3T7EucgsMOpAdlqshORHH2E"
+hosttelegram ="https://api.telegram.org/bot"
+Message = {'chat_id': chat_id, 'text': 'test'}
+headers = {'content-type': 'application/json'}
+proxies = dict(http='socks5://192.168.2.105:9050',
+               https='socks5://192.168.2.105:9050')
+requests.post(hosttelegram + tokenTelegram + '/sendMessage', data=json.dumps(Message), proxies=proxies, headers=headers)
